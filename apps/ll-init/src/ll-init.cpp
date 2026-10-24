@@ -403,6 +403,10 @@ bool SignalMonitor::dispatch(ChildProcess &child) noexcept
         signalfd_siginfo info{};
         auto ret = ::read(fd_.get(), &info, sizeof(info));
         if (ret == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
+
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 break;
             }
