@@ -7,6 +7,8 @@
 #include "linglong/utils/error/error.h"
 
 #include <functional>
+#include <QObject>
+
 #include <string>
 
 namespace linglong::service {
@@ -18,6 +20,7 @@ public:
 
     static void checkAuthorizationAsync(const std::string &actionId,
                                         const std::string &systemBusName,
+                                        QObject *context,
                                         std::function<void(utils::error::Result<bool>)> callback,
                                         bool userInteraction = true);
 };

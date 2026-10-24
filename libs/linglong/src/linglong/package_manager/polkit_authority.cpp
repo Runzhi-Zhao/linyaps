@@ -89,6 +89,7 @@ namespace linglong::service {
 void PolkitAuthority::checkAuthorizationAsync(
   const std::string &actionId,
   const std::string &systemBusName,
+  QObject *context,
   std::function<void(utils::error::Result<bool>)> callback,
   bool userInteraction)
 {
@@ -117,6 +118,7 @@ void PolkitAuthority::checkAuthorizationAsync(
     QObject::connect(
       watcher,
       &QDBusPendingCallWatcher::finished,
+      context,
       [callback = std::move(callback)](QDBusPendingCallWatcher *self) {
           LINGLONG_TRACE("check polkit authorization");
 

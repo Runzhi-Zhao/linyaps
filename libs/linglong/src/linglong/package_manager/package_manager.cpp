@@ -89,11 +89,13 @@ QVariantMap toDBusReply(utils::error::ErrorCode code,
 
 void checkPolkitAuthorizationAsync(const std::string &actionId,
                                    const std::string &systemBusName,
+                                   QObject *context,
                                    std::function<void(utils::error::Result<void>)> callback)
 {
     PolkitAuthority::checkAuthorizationAsync(
       actionId,
       systemBusName,
+      context,
       [callback = std::move(callback)](utils::error::Result<bool> authResult) {
           LINGLONG_TRACE("check polkit authorization");
           if (!authResult) {
@@ -568,6 +570,7 @@ void PackageManager::SetConfiguration(const QVariantMap &parameters) noexcept
         checkPolkitAuthorizationAsync(
           "org.deepin.linglong.PackageManager1.set-configuration",
           msg.service().toStdString(),
+          this,
           [this, parameters, msg, conn](utils::error::Result<void> authResult) {
               if (!authResult) {
                   conn.send(
@@ -880,6 +883,7 @@ auto PackageManager::InstallFromFile(const QDBusUnixFileDescriptor &fd,
         checkPolkitAuthorizationAsync(
           "org.deepin.linglong.PackageManager1.install-from-file",
           msg.service().toStdString(),
+          this,
           [this, fdDup = fd, fileType, options, ctx](utils::error::Result<void> authResult) {
               if (!authResult) {
                   ctx.connection.send(ctx.message.createErrorReply(
@@ -939,6 +943,7 @@ auto PackageManager::Install(const QVariantMap &parameters) noexcept -> QVariant
         checkPolkitAuthorizationAsync(
           "org.deepin.linglong.PackageManager1.install",
           msg.service().toStdString(),
+          this,
           [this, parameters, ctx](utils::error::Result<void> authResult) {
               if (!authResult) {
                   ctx.connection.send(ctx.message.createErrorReply(
@@ -1019,6 +1024,7 @@ auto PackageManager::Uninstall(const QVariantMap &parameters) noexcept -> QVaria
         checkPolkitAuthorizationAsync(
           "org.deepin.linglong.PackageManager1.uninstall",
           msg.service().toStdString(),
+          this,
           [this, parameters, ctx](utils::error::Result<void> authResult) {
               if (!authResult) {
                   ctx.connection.send(ctx.message.createErrorReply(
@@ -1223,6 +1229,7 @@ auto PackageManager::Update(const QVariantMap &parameters) noexcept -> QVariantM
         checkPolkitAuthorizationAsync(
           "org.deepin.linglong.PackageManager1.update",
           msg.service().toStdString(),
+          this,
           [this, parameters, ctx](utils::error::Result<void> authResult) {
               if (!authResult) {
                   ctx.connection.send(ctx.message.createErrorReply(
@@ -1677,6 +1684,7 @@ auto PackageManager::Prune() noexcept -> QVariantMap
         checkPolkitAuthorizationAsync(
           "org.deepin.linglong.PackageManager1.prune",
           msg.service().toStdString(),
+          this,
           [this, msg, conn](utils::error::Result<void> authResult) {
               if (!authResult) {
                   conn.send(
