@@ -148,6 +148,20 @@ utils::error::Result<std::filesystem::path> PackageManager::copyToStaging(int so
             LogW("failed to close staged file: {}", common::error::errorString(errno));
         }
     });
+    // every failure below must unlink the staged file: cleanStaging() only runs
+    // on the UAB success path, so leftover install-* files would accumulate
+    // (layer-sized) on every failed install
+    bool stagingCommitted = false;
+    auto removeStagedFile =
+      utils::finally::finally([&pathTemplate, &stagingCommitted]() {
+          if (!stagingCommitted) {
+              std::error_code ec;
+              std::filesystem::remove(pathTemplate, ec);
+              if (ec) {
+                  LogW("failed to remove staged file: {}", ec.message());
+              }
+          }
+      });
 
     struct stat sourceStat{};
     if (::fstat(sourceFD, &sourceStat) == -1) {
@@ -176,6 +190,7 @@ utils::error::Result<std::filesystem::path> PackageManager::copyToStaging(int so
         }
     }
 
+    stagingCommitted = true;
     return std::filesystem::path(pathTemplate);
 }
 
