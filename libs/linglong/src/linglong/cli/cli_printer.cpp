@@ -126,7 +126,9 @@ void CLIPrinter::printSearchResult(
             }
             auto rhsVer = package::Version::parse(rhs.version.c_str());
             if (!rhsVer) {
-                return false;
+                // returning false from both directions breaks the strict weak
+                // ordering std::sort requires; sort the unparseable entry last
+                return true;
             }
 
             return *lhsVer > *rhsVer;
