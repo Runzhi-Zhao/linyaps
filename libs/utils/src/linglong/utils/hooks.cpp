@@ -94,7 +94,20 @@ utils::error::Result<void> InstallHookManager::parseInstallHooks()
     LINGLONG_TRACE("Parsing install hooks");
 
     std::error_code ec;
-    for (const auto &entry : std::filesystem::directory_iterator(LINGLONG_INSTALL_HOOKS_DIR, ec)) {
+    // A failed directory_iterator CONSTRUCTION yields the end iterator, so the
+    // in-loop ec check below is unreachable: an iteration error (EACCES on the
+    // hooks dir, I/O error) silently ran zero hooks instead of failing. Check
+    // construction separately; a missing directory stays a non-error.
+    std::filesystem::directory_iterator it{ LINGLONG_INSTALL_HOOKS_DIR, ec };
+    if (ec) {
+        if (ec == std::errc::no_such_file_or_directory) {
+            return LINGLONG_OK;
+        }
+        return LINGLONG_ERR(
+          fmt::format("Failed to iterate directory {}", LINGLONG_INSTALL_HOOKS_DIR),
+          ec);
+    }
+    for (const auto &entry : it) {
         if (ec) {
             return LINGLONG_ERR(
               fmt::format("Failed to iterate directory {}", LINGLONG_INSTALL_HOOKS_DIR),
