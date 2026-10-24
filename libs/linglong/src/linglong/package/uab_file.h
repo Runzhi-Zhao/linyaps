@@ -58,6 +58,9 @@ private:
     Elf *e{ nullptr };
     std::unique_ptr<api::types::v1::UabMetaInfo> metaInfo{ nullptr };
     std::string m_mountPoint;
+    // the erofs bundle extracted next to the destination (hidepid fallback or
+    // fsck path); must be removed when this UABFile goes away
+    std::filesystem::path m_savedBundle;
 
     // 判断fd是否可在其他进程读取
     virtual bool isFileReadable(const std::string &path) const;

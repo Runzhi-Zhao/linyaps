@@ -63,6 +63,15 @@ UABFile::~UABFile()
             LogE("failed to umount {}, please umount it manually", m_mountPoint);
         }
     }
+    if (!this->m_savedBundle.empty()) {
+        std::error_code ec;
+        std::filesystem::remove(this->m_savedBundle, ec);
+        if (ec) {
+            LogW("failed to remove extracted bundle {}: {}",
+                 this->m_savedBundle.string(),
+                 ec.message());
+        }
+    }
     if (this->e) {
         elf_end(this->e);
         this->e = nullptr;
@@ -320,6 +329,7 @@ utils::error::Result<void> UABFile::unpack(const std::filesystem::path &destinat
             if (!ret) {
                 return LINGLONG_ERR(ret.error());
             }
+            this->m_savedBundle = uabFile;
         }
         auto ret = utils::Cmd("erofsfuse")
                      .exec(std::vector<std::string>{ fmt::format("--offset={}", offset),
@@ -341,6 +351,11 @@ utils::error::Result<void> UABFile::unpack(const std::filesystem::path &destinat
         auto cmdRet = utils::Cmd("fsck.erofs")
                         .exec(std::vector<std::string>{ "--extract=" + destination.string(),
                                                         uabFile.string() });
+        std::error_code removeEc;
+        std::filesystem::remove(uabFile, removeEc);
+        if (removeEc) {
+            LogW("failed to remove extracted bundle {}: {}", uabFile.string(), removeEc.message());
+        }
         if (!cmdRet) {
             return LINGLONG_ERR(cmdRet);
         }
