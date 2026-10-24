@@ -14,6 +14,9 @@
 #include "linglong/utils/serialize/json.h"
 #include "linglong/utils/serialize/packageinfo_handler.h"
 
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <fstream>
 #include <iostream>
 
@@ -336,6 +339,16 @@ utils::error::Result<void> RepoCache::writeToDisk()
     if (!ofs) {
         std::filesystem::remove(tmpFile, ec);
         return LINGLONG_ERR("failed to write cache");
+    }
+
+    // states.json is the authoritative installed-layers database: without an
+    // fsync before the rename, a crash right after install returns can leave the
+    // rename undone (or the file zero-length on some filesystems), and the cache
+    // is rebuilt from ostree refs on restart, dropping deleted flags and merged
+    // items.
+    if (::fsync(::open(tmpFile.c_str(), O_RDONLY)) == -1) {
+        std::filesystem::remove(tmpFile, ec);
+        return LINGLONG_ERR("failed to sync cache file");
     }
 
     std::filesystem::rename(tmpFile, this->cacheFile, ec);
