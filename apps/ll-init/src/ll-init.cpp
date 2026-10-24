@@ -455,8 +455,13 @@ bool overwrite_file(int fd, std::string_view content) noexcept
         return false;
     }
 
-    while (true) {
-        auto written = ::write(fd, content.data(), content.size());
+    // write(2) may transfer fewer bytes than requested (signal after a partial
+    // transfer, ENOSPC edge); the container status is compared byte-exactly by
+    // Cli::checkContainerStatus, so a partial write like "run" != "running"
+    // would permanently break instance reuse.
+    auto remaining = content;
+    while (!remaining.empty()) {
+        auto written = ::write(fd, remaining.data(), remaining.size());
         if (written == -1) {
             if (errno == EINTR) {
                 continue;
@@ -466,7 +471,7 @@ bool overwrite_file(int fd, std::string_view content) noexcept
             return false;
         }
 
-        break;
+        remaining.remove_prefix(static_cast<size_t>(written));
     }
 
     return true;
